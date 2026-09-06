@@ -1,0 +1,8 @@
+[package]
+name = "recipe-scale"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Command line tool that rescales recipe ingredient quantities."
+
+[dependencies]
