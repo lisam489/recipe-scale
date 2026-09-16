@@ -1,36 +1,39 @@
+use crate::fraction::Fraction;
+
 // Formats a scaled quantity back into text a cook would actually write.
 // Plain decimals for anything without a common kitchen fraction, otherwise
 // a mixed number ("2 1/2") since that is how measuring cups are marked.
-pub fn format_quantity(value: f64) -> String {
-    const EPSILON: f64 = 0.01;
-    let whole = value.trunc();
-    let fraction = value - whole;
+// The fraction arithmetic upstream is exact, so the only rounding here is
+// the cosmetic call between "close enough to 1/3" and "print 0.33".
+pub fn format_quantity(value: Fraction) -> String {
+    let whole = value.num / value.den;
+    let remainder = Fraction::new(value.num - whole * value.den, value.den);
 
-    let known_fractions: [(f64, &str); 7] = [
-        (1.0 / 8.0, "1/8"),
-        (1.0 / 4.0, "1/4"),
-        (1.0 / 3.0, "1/3"),
-        (1.0 / 2.0, "1/2"),
-        (2.0 / 3.0, "2/3"),
-        (3.0 / 4.0, "3/4"),
-        (7.0 / 8.0, "7/8"),
+    const KNOWN_FRACTIONS: [(i64, i64, &str); 7] = [
+        (1, 8, "1/8"),
+        (1, 4, "1/4"),
+        (1, 3, "1/3"),
+        (1, 2, "1/2"),
+        (2, 3, "2/3"),
+        (3, 4, "3/4"),
+        (7, 8, "7/8"),
     ];
 
-    for (frac_value, label) in known_fractions {
-        if (fraction - frac_value).abs() < EPSILON {
-            return if whole.abs() < EPSILON {
+    for (num, den, label) in KNOWN_FRACTIONS {
+        if remainder.num == num && remainder.den == den {
+            return if whole == 0 {
                 label.to_string()
             } else {
-                format!("{} {}", whole as i64, label)
+                format!("{} {}", whole, label)
             };
         }
     }
 
-    if fraction.abs() < EPSILON {
-        return format!("{}", whole as i64);
+    if remainder.is_zero() {
+        return whole.to_string();
     }
 
-    let rounded = (value * 100.0).round() / 100.0;
-    let text = format!("{:.2}", rounded);
+    let hundredths = (value.num * 100 + value.den / 2) / value.den;
+    let text = format!("{}.{:02}", hundredths / 100, hundredths % 100);
     text.trim_end_matches('0').trim_end_matches('.').to_string()
 }

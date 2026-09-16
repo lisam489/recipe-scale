@@ -1,15 +1,16 @@
+use crate::fraction::{self, Fraction};
 use std::fmt;
 
 #[derive(Debug)]
 pub struct Recipe {
     pub title: Option<String>,
-    pub servings: f64,
+    pub servings: Fraction,
     pub ingredients: Vec<Ingredient>,
 }
 
 #[derive(Debug)]
 pub struct Ingredient {
-    pub quantity: f64,
+    pub quantity: Fraction,
     pub description: String,
 }
 
@@ -41,7 +42,7 @@ impl fmt::Display for ParseError {
 
 pub fn parse(source: &str, file: &str) -> Result<Recipe, ParseError> {
     let mut title: Option<String> = None;
-    let mut servings: Option<f64> = None;
+    let mut servings: Option<Fraction> = None;
     let mut ingredients = Vec::new();
     let mut last_line = 0usize;
 
@@ -79,7 +80,7 @@ pub fn parse(source: &str, file: &str) -> Result<Recipe, ParseError> {
                 }
 
                 let n = parse_number(value, line_no, value_col, raw_line, file)?;
-                if n <= 0.0 {
+                if !n.is_positive() {
                     return Err(ParseError {
                         file: file.to_string(),
                         line: line_no,
@@ -192,7 +193,7 @@ fn parse_ingredient_line(raw_line: &str, line_no: usize, file: &str) -> Result<I
         }
         let denom_text: String = chars[denom_start..j].iter().collect();
         let denominator = parse_number(&denom_text, line_no, start_col + denom_start, raw_line, file)?;
-        if denominator == 0.0 {
+        if denominator.is_zero() {
             return Err(ParseError {
                 file: file.to_string(),
                 line: line_no,
@@ -202,7 +203,7 @@ fn parse_ingredient_line(raw_line: &str, line_no: usize, file: &str) -> Result<I
                 span: denom_text.chars().count().max(1),
             });
         }
-        quantity /= denominator;
+        quantity = quantity.div(denominator);
         consumed = j;
     } else {
         let mut j = i;
@@ -235,7 +236,7 @@ fn parse_ingredient_line(raw_line: &str, line_no: usize, file: &str) -> Result<I
                 let denom_text: String = chars[denom_start..m].iter().collect();
                 let numerator = parse_number(&numerator_text, line_no, start_col + frac_num_start, raw_line, file)?;
                 let denominator = parse_number(&denom_text, line_no, start_col + denom_start, raw_line, file)?;
-                if denominator == 0.0 {
+                if denominator.is_zero() {
                     return Err(ParseError {
                         file: file.to_string(),
                         line: line_no,
@@ -245,7 +246,7 @@ fn parse_ingredient_line(raw_line: &str, line_no: usize, file: &str) -> Result<I
                         span: denom_text.chars().count().max(1),
                     });
                 }
-                quantity += numerator / denominator;
+                quantity = quantity.add(numerator.div(denominator));
                 consumed = m;
             }
         }
@@ -269,8 +270,8 @@ fn parse_ingredient_line(raw_line: &str, line_no: usize, file: &str) -> Result<I
     })
 }
 
-fn parse_number(text: &str, line: usize, col: usize, raw_line: &str, file: &str) -> Result<f64, ParseError> {
-    text.parse::<f64>().map_err(|_| ParseError {
+fn parse_number(text: &str, line: usize, col: usize, raw_line: &str, file: &str) -> Result<Fraction, ParseError> {
+    fraction::parse_decimal(text).ok_or_else(|| ParseError {
         file: file.to_string(),
         line,
         col,

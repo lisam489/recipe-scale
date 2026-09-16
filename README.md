@@ -78,9 +78,9 @@ that's needed. The binary ends up at `target/release/recipe-scale`.
 
 ## Status
 
-Early skeleton. The parser handles the common cases; sharper edges (unit
-conversion, plural ingredient names, exact fraction arithmetic instead of
-floating point) are still open.
+Early skeleton. Quantities are scaled with exact fraction arithmetic, so
+scaling never drifts the way repeated floating point multiplication would.
+Sharper edges (unit conversion, plural ingredient names) are still open.
 
 ## License
 

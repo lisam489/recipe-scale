@@ -1,6 +1,8 @@
+mod fraction;
 mod parser;
 mod scale;
 
+use fraction::Fraction;
 use std::env;
 use std::fs;
 use std::process;
@@ -17,8 +19,8 @@ fn main() {
     }
 
     let path = &args[1];
-    let mut target_servings: Option<f64> = None;
-    let mut factor: Option<f64> = None;
+    let mut target_servings: Option<Fraction> = None;
+    let mut factor: Option<Fraction> = None;
 
     let mut i = 2;
     while i < args.len() {
@@ -28,7 +30,7 @@ fn main() {
                     eprintln!("error: --servings requires a value");
                     process::exit(1);
                 });
-                target_servings = Some(value.parse().unwrap_or_else(|_| {
+                target_servings = Some(fraction::parse_decimal(value).unwrap_or_else(|| {
                     eprintln!("error: --servings value \"{}\" is not a number", value);
                     process::exit(1);
                 }));
@@ -39,7 +41,7 @@ fn main() {
                     eprintln!("error: --factor requires a value");
                     process::exit(1);
                 });
-                factor = Some(value.parse().unwrap_or_else(|_| {
+                factor = Some(fraction::parse_decimal(value).unwrap_or_else(|| {
                     eprintln!("error: --factor value \"{}\" is not a number", value);
                     process::exit(1);
                 }));
@@ -71,7 +73,7 @@ fn main() {
     };
 
     let scale_factor = match (target_servings, factor) {
-        (Some(target), None) => target / recipe.servings,
+        (Some(target), None) => target.div(recipe.servings),
         (None, Some(f)) => f,
         (None, None) => {
             eprintln!("error: specify --servings <n> or --factor <n>");
@@ -80,7 +82,7 @@ fn main() {
         (Some(_), Some(_)) => unreachable!(),
     };
 
-    if scale_factor <= 0.0 {
+    if !scale_factor.is_positive() {
         eprintln!("error: scale factor must be greater than zero");
         process::exit(1);
     }
@@ -88,12 +90,12 @@ fn main() {
     if let Some(title) = &recipe.title {
         println!("{}", title);
     }
-    let new_servings = recipe.servings * scale_factor;
+    let new_servings = recipe.servings.mul(scale_factor);
     println!("servings: {}", scale::format_quantity(new_servings));
     println!();
 
     for ingredient in &recipe.ingredients {
-        let scaled = ingredient.quantity * scale_factor;
+        let scaled = ingredient.quantity.mul(scale_factor);
         println!("{} {}", scale::format_quantity(scaled), ingredient.description);
     }
 }
