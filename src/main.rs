@@ -1,6 +1,7 @@
 mod fraction;
 mod parser;
 mod scale;
+mod units;
 
 use fraction::Fraction;
 use std::env;
@@ -96,7 +97,16 @@ fn main() {
 
     for ingredient in &recipe.ingredients {
         let scaled = ingredient.quantity.mul(scale_factor);
-        println!("{} {}", scale::format_quantity(scaled), ingredient.description);
+        match ingredient.unit {
+            Some(unit) => {
+                let (converted, display_unit) = units::best_display(unit, scaled);
+                let unit_name = units::display_name(display_unit, converted);
+                println!("{} {} {}", scale::format_quantity(converted), unit_name, ingredient.description);
+            }
+            None => {
+                println!("{} {}", scale::format_quantity(scaled), ingredient.description);
+            }
+        }
     }
 }
 

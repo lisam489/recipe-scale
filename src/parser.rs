@@ -1,4 +1,5 @@
 use crate::fraction::{self, Fraction};
+use crate::units::{self, Unit};
 use std::fmt;
 
 #[derive(Debug)]
@@ -11,6 +12,7 @@ pub struct Recipe {
 #[derive(Debug)]
 pub struct Ingredient {
     pub quantity: Fraction,
+    pub unit: Option<Unit>,
     pub description: String,
 }
 
@@ -264,8 +266,17 @@ fn parse_ingredient_line(raw_line: &str, line_no: usize, file: &str) -> Result<I
         });
     }
 
+    let (unit, description) = match description.split_once(char::is_whitespace) {
+        Some((first, rest)) => match units::recognize(first) {
+            Some(u) => (Some(u), rest.trim_start()),
+            None => (None, description),
+        },
+        None => (None, description),
+    };
+
     Ok(Ingredient {
         quantity,
+        unit,
         description: description.to_string(),
     })
 }

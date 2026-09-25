@@ -56,6 +56,16 @@ Or scale by a plain multiplier instead of a target serving count:
 recipe-scale examples/pancakes.recipe --factor 1.5
 ```
 
+## Unit conversion
+
+When an ingredient's quantity is followed by a recognized unit (`tsp`,
+`tbsp`, `cup`, `g`, `kg`, plus their plurals and spelled-out forms), scaling
+checks whether the result divides evenly into a larger unit in the same
+family and switches to it. `1 tsp` baking powder scaled by 12 comes out as
+`4 tbsp`, not `12 tsp`, and `250 g` butter scaled by 4 comes out as `1 kg`.
+It never converts down to a smaller unit — a scaled quantity that stays a
+fraction of its original unit, like `2 1/2 cups`, is left as-is.
+
 ## Error messages
 
 Recipe files are hand-edited, so the most common mistake is a stray
@@ -80,7 +90,9 @@ that's needed. The binary ends up at `target/release/recipe-scale`.
 
 Early skeleton. Quantities are scaled with exact fraction arithmetic, so
 scaling never drifts the way repeated floating point multiplication would.
-Sharper edges (unit conversion, plural ingredient names) are still open.
+A handful of kitchen units convert automatically when scaling lands on a
+whole number in a larger unit. Sharper edges (plural ingredient names,
+writing the scaled recipe back to a file) are still open.
 
 ## License
 
